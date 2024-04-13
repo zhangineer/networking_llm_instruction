@@ -1,0 +1,42 @@
+how to get a list of Tenants?
+how to get a list of EPGs?
+how to get a list of path bindings?
+how to find a list of VPC paired devices?
+how to find the fabric TEP address pool?
+how to get the fabric-wide settings?
+how to get a list of LLDP neighbor mapping?
+how to get a list of vpc policy groups?
+how to get a list of interface link speed policies?
+how to find the current fabric healthscore?
+how to find a list of unregistered devices?
+how to get a list of leafs and spines along with serial numbers and models?
+how to find a list of interfaces that are admin down?
+how to get a list of EPGs with preferred group member enabled?
+how to get a list of path bindings in VLAN 132?
+how to get a list of static path bindings tagged with VLAN 123?
+how to get a list of path bindings between vlan 100 and 200?
+how to get a list of static path bindings with mode 802.1P ?
+how to get a list of contracts and associated filters, exclude any contracts named "default"?
+how to get all BDs with unicast routing disabled in Tenant common?
+how to find all changes made to bridge domain demo_bd since 2023-12-20?
+how to find all changes made to bridge domain demo_bd in Tenant demo since 2023-12-20?
+how to find how many critical faults there are in the fabric?
+how to get a list of configration related faults in Tenant demo, ordered by severity with critical being at the top?
+how to get a list of path bindings in EPG epg_vlan0001 in tenant demo?
+how to get a list of path bindings tagged with VLAN 133?
+how to find the total number of configuration changes created between 2023-12-20 and 2023-12-31?
+how to get a list of network interfaces with egress traffic utilization spikes above 1 Gbps in a 15 minute interval, between the time of 2024-01-14 9 AM and 2024-01-16 6 PM?
+how to get a list of interface profiles and port selectors that are using access policy group "phys_bm"?
+how to get a list of access and VPC policy groups that uses the "lldp_enabled" interface policy?
+how to get a list of EPGs associated with "vcenter_home" VMM domain? ( relationship class of VMM domains is child of an EPG class )
+how to get a list of EPGs that contains a physical domain deployed with on-demand setting? ( relationship class of Physical domains is child of an EPG class )
+how to get a list of path bindings modified between 2023-12-20 and 2023-12-30 configured by user named admin?
+how to find all the EPGs that contains the physical domain named "phys"? ( relationship class of Physical domains is child of an EPG class )
+how to get a list of BDs associated with vrf demo_vrf? ( relationship class of BD is child of an EPG class )
+how to get a list of BDs associated with vrf demo_vrf in Tenant demo?
+how to find all the BDs associated with l3out demo_l3out?
+how to get a list of port selectors using VPC policy group "vpc_int03_bm"?
+how to find all the consumers and providers of contract "demo_dns_contract"? (hint: consumers and providers refers to EPGs, contracts that are associated with EPGs have a relationship defined and are part of the EPGs children class )
+how to get a list of EPGs associated with BD demo_bd?
+how to get a list VLAN pools uses the encap range of 100 - 200?
+how to get a list of L3out, physical and VMM domains along with the associated AEPs and VLAN pool?
