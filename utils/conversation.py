@@ -7,7 +7,7 @@ from openai import OpenAI
 
 from utils.logger_config import create_logger
 
-LOGGER = create_logger('logs/app.log', __name__)
+LOGGER = create_logger('../logs/app.log', __name__)
 
 _ = load_dotenv((find_dotenv()))
 
