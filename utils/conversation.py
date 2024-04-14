@@ -1,4 +1,3 @@
-import tiktoken
 import json
 import os
 from dotenv import load_dotenv, find_dotenv
