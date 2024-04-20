@@ -2,6 +2,8 @@ import json
 import ast
 import csv
 import os
+import argparse
+import sys
 
 from typing import Dict, List
 from utils.base_client import BaseACIClient
@@ -35,19 +37,18 @@ class EvalDataManager:
             print(ast.literal_eval(aci_response)['totalCount'])
 
 
-def write_to_csv(data):
+def write_to_csv(data, csv_file):
     # Specify the CSV file to append to
-    csv_file_path = 'results/result.csv'
 
     # Creating header
     header = ['Total'] + [f'Q{i}' for i in range(1, len(data))]
 
     # Check if the file exists and is empty
-    file_exists = os.path.isfile(csv_file_path)
-    file_empty = os.stat(csv_file_path).st_size == 0 if file_exists else True
+    file_exists = os.path.isfile(csv_file)
+    file_empty = os.stat(csv_file).st_size == 0 if file_exists else True
 
     # Open the CSV file in append mode
-    with open(csv_file_path, mode='a', newline='') as file:
+    with open(csv_file, mode='a', newline='') as file:
         writer = csv.writer(file)
 
         # If the file is newly created or empty, write the header
@@ -64,11 +65,11 @@ def write_to_csv(data):
             # Write the row to the CSV file
             writer.writerow(row)
 
-    print(f"Data appended to {csv_file_path}.")
+    print(f"Data appended to {csv_file}.")
 
 
-def send_to_chatgpt(questions):
-    with open("instructions/full_instructions.md", 'r') as f:
+def send_to_chatgpt(questions, instructions):
+    with open(instructions, 'r') as f:
         full_instructions = f.readlines()
 
     print ("sending request to openAI")
@@ -205,15 +206,46 @@ def eval_chatgpt_answers(eval_qa, answers, scores, client) -> Dict:
     return scores
 
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser(description="Run evaluation with different instructions and collect results")
+
+    # Create a mutually exclusive group
+    group = parser.add_mutually_exclusive_group()
+
+    # Add arguments to the group
+    group.add_argument('--few_shot', action='store_true', help='Use settings for few-shot instructions.')
+    group.add_argument('--zero_shot', action='store_true', help='Use settings for zero-shot instructions.')
+    group.add_argument('--tuned', action='store_true', help='Use settings for a tuned instructions.')
+
+    # Add non-exclusive argument
+    parser.add_argument('--iteration', type=int, default=1, help='Number of iterations to run (default is 1).')
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Conditional file assignments based on the input arguments
+    if args.few_shot:
+        csv_file = 'results/few_shot_results.csv'
+        instruction = 'instructions/few_shot.md'
+    elif args.zero_shot:
+        csv_file = 'results/zero_shot_results.csv'
+        instruction = 'instructions/zero_shot.md'
+    elif args.tuned:
+        csv_file = 'results/tuned_results.csv'
+        instruction = 'instructions/tuned.md'
+    else:
+        sys.exit("You must provide at least one mode to run")
+    # Show the number of iterations
+    print("Number of iterations:", args.iteration)
+
     eval_manager = EvalDataManager('dataset/qa_data.json')
     # eval_manager.validate_test_data()
 
     questions = [data['prompt']+"?" for data in eval_manager.eval_data]
 
-    for _ in range(1):
+    for _ in range(args.iteration):
         total_score = {"Total": []}
-        gpt_answers = send_to_chatgpt(questions)
+        gpt_answers = send_to_chatgpt(questions, instruction)
         aci_client = BaseACIClient()
         aci_client.initiate_ssh_session()
         total_score = eval_chatgpt_answers(eval_qa=eval_manager.eval_data,
@@ -221,6 +253,10 @@ if __name__ == "__main__":
                                            scores=total_score,
                                            client=aci_client)
         aci_client.close_session()
-        write_to_csv(total_score)
+        write_to_csv(total_score, csv_file)
         LOGGER.info(total_score)
         print(total_score)
+
+
+if __name__ == "__main__":
+    main()
