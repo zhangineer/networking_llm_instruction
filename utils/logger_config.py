@@ -15,7 +15,7 @@ def create_logger(filename, name=__name__):
     logger.setLevel(logging.DEBUG)
 
     log_file = filename
-    max_log_size = 1024 * 1024 # max size = 1 MB
+    max_log_size = 5 * 1024 * 1024 # max size = 5 MB
     file_handler = logging.handlers.RotatingFileHandler(filename=log_file, maxBytes=max_log_size, backupCount=5)
     file_handler.setLevel(logging.DEBUG)
 
