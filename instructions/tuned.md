@@ -25,7 +25,7 @@ The general format of a Cisco ACI query command is structured as follows:
 
 * query-target-filter: filter based on query class, general format: `'<operator>(<filter>)'`, where `filter` looks like this `<class>.<attribute>,"value_to_filter"`
   * example: `moquery -c <class> -x 'query-target-filter=eq(<class>.<attribute>,"value_to_filter")'`
-  * never use multiple filters
+  * never use multiple `query-target-filter` option
 * available operators are:
   1. `eq`: equal
   2. `ne`: not equal
@@ -47,15 +47,6 @@ The general format of a Cisco ACI query command is structured as follows:
 * order-by: Sort the response based on the property values, valid values are `asc (ascending) | desc(descending)`
 * page-size: return a limited number of results
 
-## Frequently Used Classes and Attributes Layout
-* The following describes the attributes for each class.
-* Many classes have children classes as well. and each children class also has their own attributes.
-  - Children classes can be directly queried, or it can be included when querying against a parent class using option `-x rsp-subtree=children`
-  - For nested children class, use `-x rsp-subtree=full`
-* `dn` is a universal attribute available to all classes, it means distinguished name
-* Every class has an attribute of `dn`, but not all are included as they are pretty obvious.
-* values in `( )` defines available options if not specifically called out.
-
 ## Reverse Lookup Technique
 If user asks to get parent object based a child object, we need to perform reverse lookup.
 `moquery -c <parent_class> -x rsp-subtree-class=<child_class> rsp-subtree-include=required rsp-subtree=children 'rsp-subtree-filter=eq(<child_class>.<attribute>,"value_to_match")'`
@@ -65,7 +56,7 @@ Explanation:
 * `rsp-subtree=children` returns all the children objects
 * `rsp-subtree-filter` applies the filter, note that we use child_class here.
 
-## Example 
+## Example
 Assuming that you are provided the following class information
 ```
 ### fvTenant: Tenant class
@@ -91,6 +82,49 @@ Assuming that you are provided the following class information
 * To get a list of Tenants and associated EPGs, excluding any Tenant named `common`: `moquery -c fvTenant -x rsp-subtree=full 'query-target-filter=ne(fvTenant.name,"common") rsp-subtree-class=fvAEPg rsp-subtree-include=required'`
 **note** we use `rsp-subtree=full` if the children class is more than 2 layers down from the parent object
 
+## Q&A Examples:
+Here are some moquery examples:
+* how to get a list of BDs in tenant common?  
+`moquery -c fvBD -x 'query-target-filter=wcard(fvBD.dn,"/tn-common/")'`
+* how to get the BD with the exact name of either "customer" or "cust", regardless of which tenant they belong to?  
+`moquery -c fvBD -x 'query-target-filter=or(eq(fvBD.name,"customer"),eq(fvBD.name,"cust"))'`
+* how to get all BDs with unicast routing disabled in Tenant common?  
+`moquery -c fvBD -x 'query-target-filter=and(wcard(fvBD.dn,"/tn-common/"),eq(fvBD.unicastRoute,"no"))'`  
+* how to get all BDs that has a subnet configured?  
+`moquery -c fvBD -x rsp-subtree-class=fvSubnet rsp-subtree=children rsp-subtree-include=required`  
+* how to get all BDs that has a subnet configured, and the subnet must also route leak?  
+`moquery -c fvBD -x rsp-subtree-class=fvSubnet rsp-subtree=children rsp-subtree-include=required 'rsp-subtree-filter=eq(fvSubnet.scope,"shared")'`
+* how to get a list of static path bindings tagged with VLAN 1?  
+`moquery -c fvRsPathAtt -x 'query-target-filter=and(eq(fvRsPathAtt.encap,"vlan-1"),eq(fvRsPathAtt.mode,"regular"))'`
+* how to get a list of static path bindings tagged with VLAN 10?  
+`moquery -c fvRsPathAtt -x 'query-target-filter=and(eq(fvRsPathAtt.encap,"vlan-10),eq(fvRsPathAtt.mode,"regular"))'`
+* how to get a list of path bindings tagged with VLAN 50?  
+`moquery -c fvRsPathAtt -x 'query-target-filter=and(eq(fvRsPathAtt.encap,"vlan-50),eq(fvRsPathAtt.mode,"regular"))'`
+* how to get a list of static path bindings in VLAN 5?  
+`moquery -c fvRsPathAtt -x 'query-target-filter=eq(fvRsPathAtt.encap,"vlan-5")'`
+* how to get a list of static path bindings for leaf 101 and leaf 102, interface 1/24 assuming that this interface is not part of vPC or PC?  
+`moquery -c fvRsPathAtt -x 'query-target-filter=wcard(fvRsPathAtt.dn,"paths-101/pathep-\[eth1/4\]")'`
+* how to get all the bridge domains, ordered by modification date, latest first, return only the top 1st result?  
+`moquery -c fvBD -x page-size=1 page=0 order-by='fvBD.modTs|desc'`
+* how to get all configuration changes made to tenant "demo" between time 2023/12/21 5 AM and 202/12/30 9 PM?  
+`moquery -c aaaModLR -x 'query-target-filter=and(bw(aaaModLR.created,"2023-12-21T05:00","2023-12-30T21:00"),wcard(aaaModLR.affected,"tn-demo/"))'`
+* how to find configurations with specifically `deleted` action by user admin between 2024-02-08 and 2024-02-10?  
+`moquery -c aaaModLR -x 'query-target-filter=and(eq(aaaModLR.ind,"deletion"),eq(aaaModLR.user,"admin"),bw(aaaModLR.created,"2024-02-01","2024-02-15"))'`
+* how to find out how many Bridge Domain objects there are?
+`moquery -c fvBD -x rsp-subtree-include=count`
+* how to get a list of BDs associated with vrf "demo_vrf"?  
+`moquery -c fvBD -x rsp-subtree-class=fvRsCtx rsp-subtree=children rsp-subtree-include=required 'rsp-subtree-filter=eq(fvRsCtx.tnFvCtxName,"demo_vrf")'`
+* how to find all the consumers and providers of contract "application_contract"?  
+`moquery -c fvAEPg -x rsp-subtree=children rsp-subtree-class=fvRsProv,fvRsCons rsp-subtree-include=required 'rsp-subtree-filter=or(eq(fvRsProv.tnVzBrCPName,"application_contract"),eq(fvRsCons.tnVzBrCPName,"application_contract"))'`
+
+## Frequently Used Classes and Attributes Layout
+* The following describes the attributes for each class.
+* Many classes have children classes as well. and each children class also has their own attributes.
+  - Children classes can be directly queried, or it can be included when querying against a parent class using option `-x rsp-subtree=children`
+  - For nested children class, use `-x rsp-subtree=full`
+* `dn` is a universal attribute available to all classes, it means distinguished name
+* Every class has an attribute of `dn`, but not all are included as they are pretty obvious.
+* values in `( )` defines available options if not specifically called out.
 
 ### fvBD: Bridge Domain Class
 **note**: there are default bridge domains already-exists and we typically want to exclude them from queries, their names are: `default`,`ave-ctrl`, and `inb`
@@ -378,39 +412,3 @@ However, this class will also return healthscore for individual PODs, if we want
 `ack(yes/no)`: whether the fault has been acknowledged or not
 `cause`: cause of the fault, these are specific text matching the codes. for example `resolution-failed` matches code `F0952`
 `severity`: severity of the fault, when sorting, "descending" will display the `critical` ones at the top
-
-
-## Examples:
-Here are some moquery examples:
-* how to get a list of BDs in tenant common?  
-`moquery -c fvBD -x 'query-target-filter=wcard(fvBD.dn,"/tn-common/")'`
-* how to get the BD with the exact name of either "customer" or "cust", regardless of which tenant they belong to?  
-`moquery -c fvBD -x 'query-target-filter=or(eq(fvBD.name,"customer"),eq(fvBD.name,"cust"))'`
-* how to get all BDs with unicast routing disabled in Tenant common?  
-`moquery -c fvBD -x 'query-target-filter=and(wcard(fvBD.dn,"/tn-common/"),eq(fvBD.unicastRoute,"no"))'`  
-* how to get all BDs that has a subnet configured?  
-`moquery -c fvBD -x rsp-subtree-class=fvSubnet rsp-subtree=children rsp-subtree-include=required`  
-* how to get all BDs that has a subnet configured, and the subnet must also route leak?  
-`moquery -c fvBD -x rsp-subtree-class=fvSubnet rsp-subtree=children rsp-subtree-include=required 'rsp-subtree-filter=eq(fvSubnet.scope,"shared")'`
-* how to get a list of static path bindings tagged with VLAN 1?  
-`moquery -c fvRsPathAtt -x 'query-target-filter=and(eq(fvRsPathAtt.encap,"vlan-1"),eq(fvRsPathAtt.mode,"regular"))'`
-* how to get a list of static path bindings tagged with VLAN 10?  
-`moquery -c fvRsPathAtt -x 'query-target-filter=and(eq(fvRsPathAtt.encap,"vlan-10),eq(fvRsPathAtt.mode,"regular"))'`
-* how to get a list of path bindings tagged with VLAN 50?  
-`moquery -c fvRsPathAtt -x 'query-target-filter=and(eq(fvRsPathAtt.encap,"vlan-50),eq(fvRsPathAtt.mode,"regular"))'`
-* how to get a list of static path bindings in VLAN 5?  
-`moquery -c fvRsPathAtt -x 'query-target-filter=eq(fvRsPathAtt.encap,"vlan-5")'`
-* how to get a list of static path bindings for leaf 101 and leaf 102, interface 1/24 assuming that this interface is not part of vPC or PC?  
-`moquery -c fvRsPathAtt -x 'query-target-filter=wcard(fvRsPathAtt.dn,"paths-101/pathep-\[eth1/4\]")'`
-* how to get all the bridge domains, ordered by modification date, latest first, return only the top 1st result?  
-`moquery -c fvBD -x page-size=1 page=0 order-by='fvBD.modTs|desc'`
-* how to get all configuration changes made to tenant "demo" between time 2023/12/21 5 AM and 202/12/30 9 PM?  
-`moquery -c aaaModLR -x 'query-target-filter=and(bw(aaaModLR.created,"2023-12-21T05:00","2023-12-30T21:00"),wcard(aaaModLR.affected,"tn-demo/"))'`
-* how to find configurations with specifically `deleted` action by user admin between 2024-02-08 and 2024-02-10?  
-`moquery -c aaaModLR -x 'query-target-filter=and(eq(aaaModLR.ind,"deletion"),eq(aaaModLR.user,"admin"),bw(aaaModLR.created,"2024-02-01","2024-02-15"))'`
-* how to find out how many Bridge Domain objects there are?
-`moquery -c fvBD -x rsp-subtree-include=count`
-* how to get a list of BDs associated with vrf demo_vrf?  
-`moquery -c fvBD -x rsp-subtree-class=fvRsCtx rsp-subtree=children rsp-subtree-include=required 'rsp-subtree-filter=eq(fvRsCtx.tnFvCtxName,"demo_vrf")'`
-* how to find all the consumers and providers of contract "application_contract"?  
-`moquery -c fvAEPg -x rsp-subtree=children rsp-subtree-class=fvRsProv,fvRsCons rsp-subtree-include=required 'rsp-subtree-filter=or(eq(fvRsProv.tnVzBrCPName,"application_contract"),eq(fvRsCons.tnVzBrCPName,"application_contract"))'`
