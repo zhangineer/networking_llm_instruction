@@ -85,6 +85,7 @@ def send_to_chatgpt(questions, instructions):
     elif conversation.model == "gpt-4-1106-preview":
         cost = round(int(conversation.usage["total_tokens"]) / 1000 * 0.01, 2)
         total_cost += cost
+        print(f"using gpt-4-1106-preview, this run cost: {total_cost} with {conversation.usage['total_tokens']} tokens")
         LOGGER.info(f"using gpt-4-1106-preview, this run cost: {total_cost} with {conversation.usage['total_tokens']} tokens")
 
     LOGGER.info(f"Response from chatGPT\n: {conversation.response['content']}")
@@ -165,11 +166,17 @@ def eval_chatgpt_answers(eval_qa, answers, scores, client) -> Dict:
             LOGGER.info(f"correct cmd output: {correct_cmd_output}")
             LOGGER.info(f"chatGPT cmd output: {chatgpt_cmd_output}")
 
+            if 'No Mos found' in correct_cmd_output:
+                LOGGER.warning("Correct CLI returned no Mos, "
+                               "double check to ensure that the CLI command is correct and that the object exists")
+                print("Correct CLI returned no Mos")
+                continue
+
             if 'No Mos found' in chatgpt_cmd_output:
                 LOGGER.info("No Mos found")
                 print("No Mos found returned")
                 chatgpt_cmd_output = '{"No Mos found"}'
-            else: # catch all remaining errors
+            else:  # catch all remaining errors
                 LOGGER.info("Malformed response")
                 try:
                     ast.literal_eval(chatgpt_cmd_output)
