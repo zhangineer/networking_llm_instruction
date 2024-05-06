@@ -1,6 +1,6 @@
 # Networking and LLM, enhanced with system instructions
 
-This repo is part of a blog post found here: <insert link>.  
+This repo is part of a blog: [Networking and LLM — Supercharge LLM With Domain Expert Knowledge](https://medium.com/@zhangineer/networking-and-llm-supercharge-llm-with-domain-expert-knowledge-997006ca938b)
 
 ## Getting Started
 
